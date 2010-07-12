@@ -4,7 +4,7 @@ class Cp_analytics_ext
 {
 	var $settings        = array();
 	var $name            = 'CP Analytics Settings';
-	var $version         = '1.0';
+	var $version         = '1.0.1';
 	var $description     = 'Google account settings for the CP Analytics accessory.';
 	var $settings_exist  = 'y';
 	var $docs_url        = 'http://github.com/amphibian/acc.cp_analytics.ee_addon';

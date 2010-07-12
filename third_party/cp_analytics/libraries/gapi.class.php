@@ -417,8 +417,8 @@ class gapi
     
     if(substr($response['code'],0,1) != '2' || !is_array($auth_token) || empty($auth_token['Auth']))
     {
-      // throw new Exception('GAPI: Failed to authenticate user. Error: "' . strip_tags($response['body']) . '"');
-    	return FALSE;
+      throw new Exception('GAPI: Failed to authenticate user. Error: "' . strip_tags($response['body']) . '"');
+    	//return FALSE;
     }
     
     $this->auth_token = $auth_token['Auth'];
@@ -527,7 +527,7 @@ class gapi
    */
   private function fopenRequest($url, $get_variables=null, $post_variables=null, $headers=null)
   {
-    $http_options = array('method'=>'GET','timeout'=>3);
+    $http_options = array('method'=>'GET','timeout'=>10);
     
     if(is_array($headers))
     {
