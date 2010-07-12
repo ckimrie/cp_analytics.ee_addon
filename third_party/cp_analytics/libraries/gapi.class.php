@@ -417,8 +417,8 @@ class gapi
     
     if(substr($response['code'],0,1) != '2' || !is_array($auth_token) || empty($auth_token['Auth']))
     {
-      throw new Exception('GAPI: Failed to authenticate user. Error: "' . strip_tags($response['body']) . '"');
-    	//return FALSE;
+      // throw new Exception('GAPI: Failed to authenticate user. Error: "' . strip_tags($response['body']) . '"');
+    	return FALSE;
     }
     
     $this->auth_token = $auth_token['Auth'];
