@@ -7,6 +7,6 @@ CP Analytics caches your "yesterday" and "last month" stats daily, and "today's"
 
 ##Compatibility
 
-CP Analytics requires ExpressionEngine 2.0 PB and PHP 5+, and is MSM-compatible. IIS servers need to have OpenSSL enabled as well. Thine eye will be most pleased when gazing upon this accessory whenst employing the Default or Fruit themes.
+CP Analytics requires ExpressionEngine 2.0 and PHP 5+, and is MSM-compatible. Also needed in your PHP configuration: OpenSSL and HTTPS cURL support. Thine eyes will be most pleased when gazing upon this accessory whenst employing the Default or Fruit themes.
 
 The ExpressionEngine 1.6-compatible version of this add-on, called Google Analytics panel, [can be found here](http://github.com/amphibian/ext.analytics_panel.ee_addon).
