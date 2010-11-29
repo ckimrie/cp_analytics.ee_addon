@@ -2,15 +2,9 @@
 
 class Cp_analytics_acc {
 
-<<<<<<< HEAD
 	var $name			= 'CP Analytics';
 	var $id				= 'cp_analytics_acc';
 	var $version		= '1.0.1';
-=======
-	var $name		= 'CP Analytics';
-	var $id			= 'cp_analytics_acc';
-	var $version		= '1.0';
->>>>>>> c2ff2915cf4c24c2f0a141533912e1f6e7d6644c
 	var $description	= 'Display your Google Analytics stats in the EE control panel.';
 	var $sections		= array();
 	var $slug			= 'cp_analytics';
@@ -28,13 +22,8 @@ class Cp_analytics_acc {
 	function set_sections()
 	{
 		$settings = $this->get_settings();
-<<<<<<< HEAD
 		$this->name = "Google Analytics";
-		
-=======
-	        $this->name = "Google Analytics";
 
->>>>>>> c2ff2915cf4c24c2f0a141533912e1f6e7d6644c
 		if(empty($settings['user']) || empty($settings['password']) || empty($settings['profile']) || $settings['authenticated'] != 'y')
 		{
 			$this->sections[$this->EE->lang->line('analytics_not_configured')] = 
