@@ -28,4 +28,8 @@
 	</tr>
 </table>
 
+<!-- Last cached <?= $hourly_updated; ?> -->
+
+<?php if(isset($profile['id']) && isset($profile['title'])) : ?>
 <p><?=$this->EE->lang->line('analytics_viewing_profile')?> <a href="https://www.google.com/analytics/reporting/?id=<?=$profile['id']?>"><?=$profile['title']?></a></p>
+<?php endif; ?>

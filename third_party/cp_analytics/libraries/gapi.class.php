@@ -23,6 +23,11 @@
  * @version 1.3
  * 
  */
+ 
+ /*
+ 	Edited by Derek Hogue, May 2011 to replace CLientLogin authentication with AuthSub.
+ 	Authentication methods are no longer included - the class must be passed the session token.
+ */
 
 class gapi
 {
@@ -46,24 +51,55 @@ class gapi
    * 
    * Set up authenticate with Google and get auth_token
    *
-   * @param String $email
-   * @param String $password
    * @param String $token
    * @return gapi
    */
-  public function __construct($email, $password, $token=null)
+  public function __construct($token=null)
   {
     if($token !== null)
     {
       $this->auth_token = $token;
+      // $this->authenticateUser($token);
     }
     else 
     {
-      $this->authenticateUser($email,$password);
+      return false;
     }
   }
+
+
+	/**
+	* Added by Derek Hogue, May 5th 2011
+	* Deauthorizes the current session token
+	*
+	* @return null
+	*/
+	public function deauthorizeSessionToken($token = null)
+	{
+		$this->httpRequest('https://www.google.com/accounts/AuthSubRevokeToken', null, null, $this->generateAuthHeader());
+	}  
   
-  /**
+	/**
+	* Added by Derek Hogue, May 5th 2011
+	* Gets a permanent session token using a single-use token
+	*
+	* @return String
+	*/
+	public function getSessionToken($token = null)
+	{
+		$response =  $this->httpRequest('https://www.google.com/accounts/AuthSubSessionToken', null, null, $this->generateAuthHeader());
+	    if(substr($response['code'],0,1) == '2')
+	    {
+	      return str_replace('Token=', '', $response['body']);
+	    }
+	    else 
+	    {
+	    	return FALSE;
+	    }
+	}
+
+ 
+   /**
    * Return the auth token, used for storing the auth token in the user session
    *
    * @return String
@@ -431,7 +467,7 @@ class gapi
    */
   protected function generateAuthHeader()
   {
-    return array('Authorization: GoogleLogin auth=' . $this->auth_token);
+    return array('Authorization: AuthSub token=' . $this->auth_token);
   }
   
   /**

@@ -1,21 +1,62 @@
 <?php  if ( ! defined('BASEPATH')) exit('No direct script access allowed');
 
+/*
+    This file is part of CP Analytics add-on for ExpressionEngine.
+
+    CP Analytics is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    CP Analytics is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    Read the terms of the GNU General Public License
+    at <http://www.gnu.org/licenses/>.
+    
+    Copyright 2011 Derek Hogue
+*/
+
 class Cp_analytics_acc {
 
 	var $name			= 'CP Analytics';
 	var $id				= 'cp_analytics_acc';
-	var $version		= '1.0.1';
+	var $version		= '1.1';
 	var $description	= 'Display your Google Analytics stats in the EE control panel.';
 	var $sections		= array();
 	var $slug			= 'cp_analytics';
 	var $extension		= 'Cp_analytics_ext';
+	var $token			= '';
+	var $profile		= '';
 
 
 	function Cp_analytics_acc()
 	{
 		$this->EE =& get_instance();
-		$this->EE->cp->load_package_css('accessory');
 		$this->EE->lang->loadfile('cp_analytics');
+		$theme = $this->EE->session->userdata['cp_theme'];
+		
+		// Always load the default CSS
+		$this->EE->cp->load_package_css('default');
+				
+		switch($theme)
+		{
+			// Don't need to add anything if we're using the default theme
+			case 'default':
+				break;
+			// Add tweaks for Corporate theme
+			case 'corporate':
+				$this->EE->cp->load_package_css('corporate');
+				break;
+			// Allow overrides from custom themes as well
+			default:
+				if(file_exists(PATH_THIRD.'cp_analytics/css/'.$theme.'.css'))
+				{
+					$this->EE->cp->load_package_css($theme);
+				}
+		}
 	}
 
 
@@ -24,7 +65,7 @@ class Cp_analytics_acc {
 		$settings = $this->get_settings();
 		$this->name = "Google Analytics";
 
-		if(empty($settings['user']) || empty($settings['password']) || empty($settings['profile']) || $settings['authenticated'] != 'y')
+		if(empty($settings['profile']) || empty($settings['token']))
 		{
 			$this->sections[$this->EE->lang->line('analytics_not_configured')] = 
 				'<p><a href="'.
@@ -36,9 +77,8 @@ class Cp_analytics_acc {
 		}
 		else
 		{
-			$ga_user = $settings['user'];
-			$ga_password = base64_decode($settings['password']);
-			$ga_profile_id = $settings['profile'];
+			$this->token = $settings['token'];
+			$this->profile = $settings['profile'];
 			
 			// Check to see if we have a hourly cache, and if it's still valid
 			if(isset($settings['hourly_cache']['cache_time']) && 
@@ -49,8 +89,8 @@ class Cp_analytics_acc {
 			}
 			else
 			{
-				$today = $this->fetch_hourly_stats($ga_user, $ga_password, $ga_profile_id);
-				$today['hourly_updated'] = date('g:ia', $this->EE->localize->set_localized_time());
+				$today = $this->fetch_hourly_stats();
+				$today['hourly_updated'] = date('g:ia', $this->EE->localize->now);
 			}
 				
 			// Check to see if we have a daily cache, and if it's still valid
@@ -62,7 +102,7 @@ class Cp_analytics_acc {
 			}
 			else
 			{
-				$daily = $this->fetch_daily_stats($ga_user, $ga_password, $ga_profile_id);
+				$daily = $this->fetch_daily_stats();
 				$daily['daily_updated'] = date('Y-m-d', $this->EE->localize->set_localized_time());
 			}
 			
@@ -116,22 +156,21 @@ class Cp_analytics_acc {
 	}	
 	
 	
-	function fetch_hourly_stats($ga_user, $ga_password, $ga_profile_id)
+	function fetch_hourly_stats()
 	{
 		$data = array();
 		$data['cache_time'] = $this->EE->localize->set_localized_time();					
 
 		require_once(PATH_THIRD.'cp_analytics/libraries/gapi.class.php');
 		
-		$today = new gapi($ga_user,$ga_password);
-		$ga_auth_token = $today->getAuthToken();
+		$today = new gapi($this->token);
 		$today->requestReportData(
-			$ga_profile_id,
+			$this->profile,
 			array('date'),
 			array('pageviews','visits', 'timeOnSite'),
 			'','',
-			date('Y-m-d'),
-			date('Y-m-d')
+			date('Y-m-d', $this->EE->localize->set_localized_time()),
+			date('Y-m-d', $this->EE->localize->set_localized_time())
 		);
 		
 		$data['visits'] = 
@@ -157,7 +196,7 @@ class Cp_analytics_acc {
 	}
 
 
-	function fetch_daily_stats($ga_user, $ga_password, $ga_profile_id)
+	function fetch_daily_stats()
 	{
 		$data = array();
 		$data['cache_date'] = date('Y-m-d', $this->EE->localize->set_localized_time());					
@@ -165,15 +204,14 @@ class Cp_analytics_acc {
 		require_once(PATH_THIRD.'cp_analytics/libraries/gapi.class.php');
 		
 		// Compile yesterday's stats
-		$yesterday = new gapi($ga_user,$ga_password);
-		$ga_auth_token = $yesterday->getAuthToken();
+		$yesterday = new gapi($this->token);
 		$yesterday->requestReportData(
-			$ga_profile_id,
+			$this->profile,
 			array('date'),
 			array('pageviews','visits', 'timeOnSite'),
 			'','',
-			date('Y-m-d', strtotime('yesterday')),
-			date('Y-m-d', strtotime('yesterday'))
+			date('Y-m-d', strtotime('yesterday', $this->EE->localize->set_localized_time())),
+			date('Y-m-d', strtotime('yesterday', $this->EE->localize->set_localized_time()))
 		);
 		
 		// Get account data so we can store the profile info
@@ -181,7 +219,7 @@ class Cp_analytics_acc {
 		$yesterday->requestAccountData(1,100);
 		foreach($yesterday->getResults() as $result)
 		{
-			if($result->getProfileId() == $ga_profile_id)
+			if($result->getProfileId() == $this->profile)
 			{
 				$data['profile']['id'] = $result->getProfileId();
 				$data['profile']['title'] = $result->getTitle();
@@ -201,8 +239,9 @@ class Cp_analytics_acc {
 		$this->analytics_avg_visit($yesterday->getTimeOnSite(), $yesterday->getVisits());
 		
 		// Compile last month's stats
-		$lastmonth = new gapi($ga_user,$ga_password,$ga_auth_token);
-		$lastmonth->requestReportData($ga_profile_id,
+		$lastmonth = new gapi($this->token);
+		$lastmonth->requestReportData(
+			$this->profile,
 			array('date'),
 			array('pageviews','visits', 'newVisits', 'timeOnSite', 'bounces', 'entrances'),
 			'date', '',
@@ -246,8 +285,9 @@ class Cp_analytics_acc {
 		$this->analytics_sparkline($lastmonth->getResults(), 'newvisits');
 
 		// Compile last month's top content
-		$topcontent = new gapi($ga_user,$ga_password,$ga_auth_token);
-		$topcontent->requestReportData($ga_profile_id,
+		$topcontent = new gapi($this->token);
+		$topcontent->requestReportData(
+			$this->profile,
 			array('hostname', 'pagePath'),
 			array('pageviews'),
 			'-pageviews', '',
@@ -294,8 +334,9 @@ class Cp_analytics_acc {
 		$data['lastmonth']['content'] = array_slice($data['lastmonth']['content'], 0, 8);
 		
 		// Compile last month's top referrers
-		$referrers = new gapi($ga_user,$ga_password,$ga_auth_token);
-		$referrers->requestReportData($ga_profile_id,
+		$referrers = new gapi($this->token);
+		$referrers->requestReportData(
+			$this->profile,
 			array('source', 'referralPath', 'medium'),
 			array('visits'),
 			'-visits', '',

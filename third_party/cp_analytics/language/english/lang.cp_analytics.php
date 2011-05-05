@@ -1,13 +1,16 @@
 <?php
 
 $lang = array(
-	'analytics_username' => 'Google Analytics username',
-	'analytics_password' => 'Google Analytics password',
-	'analytics_authenticated_as' => 'Currently authenticated as',
-	'analytics_reset' => 'Remove credentials',
+	'analytics_instructions_1' => 'You must authenticate with Google before you can use CP Analytics.',
+	'analytics_instructions_2' => 'Click here to authenticate.',
+	'analytics_instructions_3' => 'If you receive an error message saying your site is not registered, ',
+	'analytics_instructions_4' => 'follow these instructions',
+	'analytics_instructions_5' => 'for registering your site, then try again.',
+	'analytics_authenticated' => 'Currently authenticated',
+	'analytics_authentication' => 'Authentication status',
+	'analytics_reset' => 'Remove authentication',
 	'analytics_profile' => 'Choose an Analytics profile',
-	'analytics_need_credentials' => 'You must save your Google Analytics account credentials before choosing a profile.',
-	'analytics_bad_credentials' => 'Couldn\'t authenticate with the credentials provided.',
+	'analytics_bad_credentials' => 'We couldn\'t authenticate your account. Is your site registered? Is your Target URL path prefix correct?',
 	'analytics_no_accounts' => 'No account profiles available.',
 	'analytics_trouble_connecting' => 'Couldn\'t connect',
 	'analytics_trouble_connecting_message' => 'Sorry, but we couldn\'t connect to your Google Analytics profile for some reason.',

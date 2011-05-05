@@ -1,15 +1,34 @@
 <?php  if ( ! defined('BASEPATH')) exit('No direct script access allowed');
 
+/*
+    This file is part of CP Analytics add-on for ExpressionEngine.
+
+    CP Analytics is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    CP Analytics is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    Read the terms of the GNU General Public License
+    at <http://www.gnu.org/licenses/>.
+    
+    Copyright 2011 Derek Hogue
+*/
+
 class Cp_analytics_ext
 {
 	var $settings        = array();
 	var $name            = 'CP Analytics Settings';
-	var $version         = '1.0.1';
+	var $version         = '1.1';
 	var $description     = 'Google account settings for the CP Analytics accessory.';
 	var $settings_exist  = 'y';
-	var $docs_url        = 'http://github.com/amphibian/acc.cp_analytics.ee_addon';
+	var $docs_url        = 'http://github.com/amphibian/cp_analytics.ee_addon';
 	var $slug			 = 'cp_analytics';
-
+	var $token = '';
 
 	function Cp_analytics_ext($settings='')
 	{
@@ -25,15 +44,32 @@ class Cp_analytics_ext
 		
 		// Get current site	
 		$site = $this->EE->config->item('site_id');
+
+		// Only grab settings for the current site
+		$vars['current'] = (isset($current[$site])) ? $current[$site] : $current;
 		
-		// This removes the current username/password
-		if(isset($_GET['analytics_reset']))
+		// We need our file name for the settings form
+		$vars['file'] = $this->slug;
+		
+		// AuthSub authentication destination
+		$next = $this->EE->config->item('cp_url').'?D=cp&C=addons_extensions&M=extension_settings&file='.$this->slug.'&authsub=y';
+		$scope = 'https://www.google.com/analytics/feeds/';
+		$vars['authsub_url'] = 'https://www.google.com/accounts/AuthSubRequest?next='.urlencode($next).'&scope='.urlencode($scope).'&secure=0&session=1';		
+		
+		// Include our gapi class
+		require_once(PATH_THIRD.'cp_analytics/libraries/gapi.class.php');				
+		
+		// This removes the current authentication
+		if(isset($_GET['reset']))
 		{
-			$settings = $this->get_settings(TRUE);	
-			$settings[$site]['user'] = '';
-			$settings[$site]['password'] = '';
+			if(isset($current['token']))
+			{
+				$ga = new gapi($current['token']);
+				$ga->deauthorizeToken();
+			}
+			$settings = $this->get_settings(TRUE);
+			$settings[$site]['token'] = '';
 			$settings[$site]['profile'] = '';
-			$settings[$site]['authenticated'] = '';
 
 			$this->EE->db->where('class', ucfirst(get_class($this)));
 			$this->EE->db->update('extensions', array('settings' => serialize($settings)));
@@ -45,20 +81,26 @@ class Cp_analytics_ext
 			exit;	
 		}
 		
-		// Only grab settings for the current site
-		$vars['current'] = (isset($current[$site])) ? $current[$site] : $current;
-		
-		// We need our file name for the settings form
-		$vars['file'] = $this->slug;
-		
-		// If we have a username and password, try and authenticate and fetch our profile list
-		if(isset($vars['current']['authenticated']) && $vars['current']['authenticated'] == 'y')
+		// Are we authenticating right now?
+		if(isset($_GET['authsub']) && isset($_GET['token']))
 		{
-			require_once(PATH_THIRD.'cp_analytics/libraries/gapi.class.php');				
-			$ga_user = $vars['current']['user'];
-			$ga_password = base64_decode($vars['current']['password']);
-			
-			$ga = new gapi($ga_user, $ga_password);
+			$ga = new gapi($_GET['token']);
+			$token = $ga->getSessionToken();
+			if($token != FALSE)
+			{
+				$vars['current']['token'] = $token;
+				$this->save_settings($token);
+			}
+			else
+			{
+				$vars['bad_token'] = TRUE;
+			}
+		}
+		
+		// If we're authenticated, try and authenticate and fetch our profile list
+		if(isset($vars['current']['token']))
+		{
+			$ga = new gapi($vars['current']['token']);
 			$ga->requestAccountData(1,100);
 			
 			if($ga->getResults())
@@ -68,6 +110,7 @@ class Cp_analytics_ext
 				{
 				  $vars['ga_profiles'][$result->getProfileId()] = $result->getTitle();
 				}
+				asort($vars['ga_profiles']);
 			}
 		}
 		
@@ -76,7 +119,7 @@ class Cp_analytics_ext
 	}
 	
 	
-	function save_settings()
+	function save_settings($token = null)
 	{
 		// Get all settings
 		$settings = $this->get_settings(TRUE);
@@ -84,31 +127,16 @@ class Cp_analytics_ext
 		// Get current site	
 		$site = $this->EE->config->item('site_id');
 				
-		// print_r($settings); exit();
-		
-		// If we're posting a username and password,
-		// check if they authenticate, and store them if they do.
-		// If not, discard and throw the authentication error flag
-		
-		if(isset($_POST['user']) && isset($_POST['password']))
+		// print_r($settings); exit;
+						
+		// if we've passed a token
+		if(isset($token))
 		{
 			require_once(PATH_THIRD.'cp_analytics/libraries/gapi.class.php');				
-			$ga_user = $_POST['user'];
-			$ga_password = $_POST['password'];
-			$ga = new gapi($ga_user, $ga_password);
+			$ga = new gapi($token);
 			if($ga->getAuthToken() != FALSE)
 			{
-				$settings[$site]['user'] = $_POST['user'];
-				$settings[$site]['password'] = base64_encode($_POST['password']);
-				$settings[$site]['authenticated'] = 'y';
-			}
-			else
-			{
-				// The credentials don't authenticate, so zero us out
-				$settings[$site]['user'] = '';
-				$settings[$site]['password'] = '';
-				$settings[$site]['profile'] = '';
-				$settings[$site]['authenticated'] = 'n';
+				$settings[$site]['token'] = $token;
 			}
 		}
 		
@@ -122,14 +150,22 @@ class Cp_analytics_ext
 		$this->EE->db->where('class', ucfirst(get_class($this)));
 		$this->EE->db->update('extensions', array('settings' => serialize($settings)));
 		
-		$this->EE->session->set_flashdata('message_success', $this->EE->lang->line('preferences_updated'));
-		
-		$this->EE->functions->redirect(
-				BASE.AMP.'C=addons_extensions'.
-				AMP.'M=extension_settings'.
-				AMP.'file='.$this->slug
-			);
-		exit;
+		// If we passed the token, it means we're doing this silently
+		if(isset($token))
+		{
+			return;
+		}
+		else
+		{
+			$this->EE->session->set_flashdata('message_success', $this->EE->lang->line('preferences_updated'));
+			
+			$this->EE->functions->redirect(
+					BASE.AMP.'C=addons_extensions'.
+					AMP.'M=extension_settings'.
+					AMP.'file='.$this->slug
+				);
+			exit;
+		}
 	}
 
 	
