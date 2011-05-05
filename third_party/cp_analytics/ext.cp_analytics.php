@@ -65,7 +65,7 @@ class Cp_analytics_ext
 			if(isset($vars['current']['token']))
 			{
 				$ga = new gapi($vars['current']['token']);
-				$ga->deauthorizeToken();
+				$ga->deauthorizeSessionToken();
 			}
 			$settings = $this->get_settings(TRUE);
 			$settings[$site]['token'] = '';
