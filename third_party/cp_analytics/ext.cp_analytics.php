@@ -62,9 +62,9 @@ class Cp_analytics_ext
 		// This removes the current authentication
 		if(isset($_GET['reset']))
 		{
-			if(isset($current['token']))
+			if(isset($vars['current']['token']))
 			{
-				$ga = new gapi($current['token']);
+				$ga = new gapi($vars['current']['token']);
 				$ga->deauthorizeToken();
 			}
 			$settings = $this->get_settings(TRUE);
