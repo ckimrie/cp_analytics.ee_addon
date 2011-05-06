@@ -98,7 +98,7 @@ class gapi
 	    {
 	    	// If this is an error code from Google, we parse out the message
 	    	preg_match('/<h1>(.+)<\/h1>/i', $response['body'], $matches);
-	    	if(!empty($matches))
+	    	if(isset($mathes) && !empty($matches))
 	    	{
 	    		return 'Error: '.$matches[1];
 	    	}
