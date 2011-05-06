@@ -25,7 +25,7 @@
  */
  
  /*
- 	Edited by Derek Hogue, May 2011 to replace CLientLogin authentication with AuthSub.
+ 	Edited by Derek Hogue, May 2011 to replace ClientLogin authentication with AuthSub.
  	Authentication methods are no longer included - the class must be passed the session token.
  */
 
@@ -96,8 +96,17 @@ class gapi
 	    }
 	    else 
 	    {
+	    	// If this is an error code from Google, we parse out the message
 	    	preg_match('/<h1>(.+)<\/h1>/i', $response['body'], $matches);
-	    	return 'Error: '.$matches[1];
+	    	if(!empty($matches))
+	    	{
+	    		return 'Error: '.$matches[1];
+	    	}
+	    	else
+	    	{
+	    		// Our error is conneciton-related, never made it to Google
+	    		return $response['body'];
+	    	}
 	    }
 	}
 
