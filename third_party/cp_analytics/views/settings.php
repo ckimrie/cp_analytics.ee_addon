@@ -2,10 +2,10 @@
     $this->EE =& get_instance();
 	$this->EE->cp->load_package_css('settings');
 
-	if(!isset($current['token']) || $current['token'] == '' || isset($bad_token)) : ?>
+	if(!isset($current['token']) || $current['token'] == '' || isset($connection_error)) : ?>
 		
-		<?php if(isset($bad_token)) : ?>
-		<p class="notice"><?= $this->EE->lang->line('analytics_bad_credentials') ?></p>
+		<?php if(isset($connection_error)) : ?>
+		<p class="ga_error"><?= $connection_error ?></p>
 		<?php endif; ?>
 		
 		<p class="ga_intro"><?= $this->EE->lang->line('analytics_instructions_1') ?> <a href="<?= $authsub_url ?>"><?= $this->EE->lang->line('analytics_instructions_2') ?></a></p>

@@ -23,7 +23,7 @@ class Cp_analytics_acc {
 
 	var $name			= 'CP Analytics';
 	var $id				= 'cp_analytics_acc';
-	var $version		= '1.1';
+	var $version		= '1.1.1';
 	var $description	= 'Display your Google Analytics stats in the EE control panel.';
 	var $sections		= array();
 	var $slug			= 'cp_analytics';

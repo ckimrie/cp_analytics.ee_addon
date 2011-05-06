@@ -23,7 +23,7 @@ class Cp_analytics_ext
 {
 	var $settings        = array();
 	var $name            = 'CP Analytics Settings';
-	var $version         = '1.1';
+	var $version         = '1.1.1';
 	var $description     = 'Google account settings for the CP Analytics accessory.';
 	var $settings_exist  = 'y';
 	var $docs_url        = 'http://github.com/amphibian/cp_analytics.ee_addon';
@@ -86,14 +86,14 @@ class Cp_analytics_ext
 		{
 			$ga = new gapi($_GET['token']);
 			$token = $ga->getSessionToken();
-			if($token != FALSE)
+			if(strpos($token, 'Error:') === FALSE)
 			{
 				$vars['current']['token'] = $token;
 				$this->save_settings($token);
 			}
 			else
 			{
-				$vars['bad_token'] = TRUE;
+				$vars['connection_error'] = $token;
 			}
 		}
 		

@@ -34,6 +34,8 @@ class gapi
   const http_interface = 'auto'; //'auto': autodetect, 'curl' or 'fopen'
   
   const client_login_url = 'https://www.google.com/accounts/ClientLogin';
+  const token_session_url = 'https://www.google.com/accounts/AuthSubSessionToken';
+  const token_revoke_url = 'https://www.google.com/accounts/AuthSubRevokeToken';
   const account_data_url = 'https://www.google.com/analytics/feeds/accounts/default';
   const report_data_url = 'https://www.google.com/analytics/feeds/data';
   const interface_name = 'GAPI-1.3';
@@ -76,7 +78,7 @@ class gapi
 	*/
 	public function deauthorizeSessionToken($token = null)
 	{
-		$this->httpRequest('https://www.google.com/accounts/AuthSubRevokeToken', null, null, $this->generateAuthHeader());
+		$this->httpRequest(gapi::token_revoke_url, null, null, $this->generateAuthHeader());
 	}  
   
 	/**
@@ -87,14 +89,15 @@ class gapi
 	*/
 	public function getSessionToken($token = null)
 	{
-		$response =  $this->httpRequest('https://www.google.com/accounts/AuthSubSessionToken', null, null, $this->generateAuthHeader());
+		$response =  $this->httpRequest(gapi::token_session_url, null, null, $this->generateAuthHeader());
 	    if(substr($response['code'],0,1) == '2')
 	    {
 	      return str_replace('Token=', '', $response['body']);
 	    }
 	    else 
 	    {
-	    	return FALSE;
+	    	preg_match('/<h1>(.+)<\/h1>/i', $response['body'], $matches);
+	    	return 'Error: '.$matches[1];
 	    }
 	}
 
@@ -436,6 +439,7 @@ class gapi
    * @param String $email
    * @param String $password
    */
+/*
   protected function authenticateUser($email, $password)
   {
     $post_variables = array(
@@ -459,6 +463,7 @@ class gapi
     
     $this->auth_token = $auth_token['Auth'];
   }
+*/
   
   /**
    * Generate authentication token header for all requests
@@ -546,7 +551,15 @@ class gapi
     }
     
     $response = curl_exec($ch);
-    $code = curl_getinfo($ch,CURLINFO_HTTP_CODE);
+    if($response == FALSE)
+    {
+    	$response = curl_error($ch);
+    	$code = '400';
+    }
+    else
+    {
+    	$code = curl_getinfo($ch,CURLINFO_HTTP_CODE);
+    }
     
     curl_close($ch);
     
@@ -600,7 +613,7 @@ class gapi
     $context = stream_context_create(array('http'=>$http_options));
     $response = @file_get_contents($url . $get_variables, null, $context);  
     
-    return array('body'=>$response!==false?$response:'Request failed, fopen provides no further information','code'=>$response!==false?'200':'400');
+    return array('body'=>$response!==false?$response:'The fopen request failed.','code'=>$response!==false?'200':'400');
   }
   
   /**
