@@ -57,12 +57,7 @@ class Cp_analytics_acc {
 					$this->EE->cp->load_package_css($theme);
 				}
 		}
-		
-		//If we are on the homepage, lets show the nice graph
-		//Only initialize if we are on the view entry page
-		if(	$this->EE->input->get('D') == "cp" && 	$this->EE->input->get('C') == "homepage"){
-			$this->homegraph();
-		}
+
 	}
 
 
@@ -127,6 +122,11 @@ class Cp_analytics_acc {
 				
 				$this->sections[$this->EE->lang->line('analytics_top_referrers')] = 
 					$this->EE->load->view('referrers', $daily['lastmonth'], TRUE);
+					
+				//If on the homepage, inject the new the home graph JS w/ data
+				if(	$this->EE->input->get('D') == "cp" && 	$this->EE->input->get('C') == "homepage"){
+					$this->inject_homegraph($daily['lastmonth']);
+				}
 			}
 			else
 			{
@@ -260,8 +260,10 @@ class Cp_analytics_acc {
 		
 		$data['lastmonth']['visits'] = 
 		number_format($lastmonth->getVisits());
+		$views = $lastmonth->getResults();
+		$data['lastmonth']['visits_data'] = $this->homepage_graph_data($views);
 		$data['lastmonth']['visits_sparkline'] = 
-		$this->analytics_sparkline($lastmonth->getResults(), 'visits');
+		$this->analytics_sparkline($views, 'visits');
 		
 		$data['lastmonth']['pageviews'] = 
 		number_format($lastmonth->getPageviews());
@@ -438,8 +440,51 @@ class Cp_analytics_acc {
 	 * @return void
 	 * @author Christopher Imrie
 	 */
-	public function homegraph()
+	public function inject_homegraph($lastmonth)
 	{
-		$this->EE->cp->load_package_js('home_analytics_graph');
+		$data = array(); 
+		
+		for($i = 30; $i > 0; $i--){
+			$timestamp = time() - 86400 * ($i + 1); //Data is 2 days behind
+			
+			$data['datapoint_dates'][] = date('j', $timestamp); 
+			$data['datapoint_months'][date('F', $timestamp)] = date('F', $timestamp); 
+			
+			
+		}
+		
+		
+		
+		$this->EE->cp->add_to_head($this->EE->load->view('home_analytics_graph', $data, TRUE));
+	}
+	
+	
+	
+	/**
+	 * Builds a data array for use on the homepage graph
+	 *
+	 * @param string $data_array 
+	 * @return void
+	 * @author Christopher Imrie
+	 */
+	public function homepage_graph_data($data_array='')
+	{
+		$stats = array(); $min = 100000000; $max = 0; $sum = 0;
+		
+		foreach($data_array as $result)
+		{
+			$datapoint = $result->getVisits();
+			$stats['datapoints'][] = $datapoint;
+			
+			$min = $datapoint < $min ? $datapoint : $min;
+			$max = $datapoint > $max ? $datapoint : $max;
+			$sum += $datapoint;
+		}
+		$stats['datapoints_yaxis'] = array(0, ceil(($max/4)) , ceil(($max/4)* 2), ceil(($max/4) *3), $max);
+		$stats['datapoints_max'] = $max;
+		$stats['datapoints_min'] = $min;
+		$stats['datapoints_avg'] = ceil($sum / 30);
+		
+		return $stats;
 	}
 }
