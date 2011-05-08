@@ -57,6 +57,12 @@ class Cp_analytics_acc {
 					$this->EE->cp->load_package_css($theme);
 				}
 		}
+		
+		//If we are on the homepage, lets show the nice graph
+		//Only initialize if we are on the view entry page
+		if(	$this->EE->input->get('D') == "cp" && 	$this->EE->input->get('C') == "homepage"){
+			$this->homegraph();
+		}
 	}
 
 
@@ -424,5 +430,16 @@ class Cp_analytics_acc {
 		return '<img src="http://chart.apis.google.com/chart?cht=ls&amp;chs=120x20&amp;chm=B,FFFFFF66,0,0,0&amp;chco=FFFFFFEE&amp;chf=c,s,FFFFFF00|bg,s,FFFFFF00&chd=t:'.implode(',',$stats).'&amp;chds=0,'.$max.'" alt="" />';
 	}		
 
-
+	
+	
+	/**
+	 * Show a large graph on the homepage
+	 *
+	 * @return void
+	 * @author Christopher Imrie
+	 */
+	public function homegraph()
+	{
+		$this->EE->cp->load_package_js('home_analytics_graph');
+	}
 }
